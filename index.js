@@ -2,6 +2,32 @@ const express = require('express')
 const bodyParser = require('body-parser')
 const helmet = require('helmet')
 const path = require('path')
+const mongoose = require('mongoose')
+
+//connects to db
+mongoose.connect('mongodb://127.0.0.1:27017/COFFEE_ORDERS', { useNewUrlParser: true } );
+
+//tests connection
+var db = mongoose.connection;
+db.on('error', console.error.bind(console, 'connection error:'));
+db.once('open', function() {
+  // we're connected!
+  console.log('connected')
+});
+
+//defines a coffe order
+var CoffeOrderSchema = new mongoose.Schema({
+  name: String,
+  coffeeType: String
+}, 
+{
+  timestamps: true
+});
+
+// creates a mongoose model from the schema we defined
+var CoffeeOrder = mongoose.model('CoffeeOrder', CoffeOrderSchema);
+
+
 // const mustacheExpress = require('mustache-express') // example for using server side views
 
 var movies = [
@@ -45,8 +71,29 @@ app.all('*', function (req, res, next) {
 app.use(helmet())
 
 // ROUTES GO HERE
-app.get('/api/movies', function (req, res, next) {
-  res.json({moviesArray: movies})
+app.get('/api/orders', function (req, res, next) {
+
+  CoffeeOrder.find(function(err, theOrders){
+    if (err) return console.error(err);
+    res.json({orders: theOrders})
+  })
+  
+})
+
+app.post('/api/create/order', function(req, res, next){
+
+  const orderName = req.body.name
+  const orderType = req.body.type
+
+  var NewCoffeeOrder = new CoffeeOrder({ name: orderName, coffeeType: orderType });
+
+  NewCoffeeOrder.save(function (err, newOrder) {
+    if (err) return console.error(err);
+    console.log('created', newOrder)
+    res.json({created: newOrder})
+  });
+
+
 })
 
 
